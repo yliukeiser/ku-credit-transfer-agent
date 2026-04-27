@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KU Credit Transfer Evaluation</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      color: #1a1a2e;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #003087;
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    .logo {
+      width: 46px; height: 46px;
+      background: white;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: #003087; font-size: 18px; letter-spacing: -1px;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header p  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+    header .restart {
+      margin-left: auto;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white; padding: 8px 16px; border-radius: 8px;
+      cursor: pointer; font-size: 13px; transition: background .2s;
+    }
+    header .restart:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Progress bar ── */
+    #progress-bar {
+      background: white;
+      border-bottom: 1px solid #dde3ea;
+      display: flex;
+      padding: 0 32px;
+    }
+    .step-tab {
+      padding: 14px 20px;
+      font-size: 13px;
+      color: #9ca3af;
+      border-bottom: 3px solid transparent;
+      display: flex; align-items: center; gap: 8px;
+      transition: color .2s, border-color .2s;
+    }
+    .step-tab .num {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      color: #6b7280;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-tab.active { color: #003087; border-bottom-color: #003087; }
+    .step-tab.active .num { background: #003087; color: white; }
+    .step-tab.done { color: #16a34a; }
+    .step-tab.done .num { background: #16a34a; color: white; }
+
+    /* ── Main content ── */
+    main {
+      max-width: 900px;
+      margin: 36px auto;
+      padding: 0 20px 60px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 20px; font-weight: 700; color: #003087;
+      margin-bottom: 8px;
+    }
+    .card .subtitle {
+      font-size: 14px; color: #6b7280; margin-bottom: 24px;
+    }
+
+    /* ── Step panels ── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    /* ── Degree type cards ── */
+    .degree-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .degree-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s, transform .15s;
+    }
+    .degree-card:hover {
+      border-color: #003087;
+      box-shadow: 0 4px 16px rgba(0,48,135,0.12);
+      transform: translateY(-2px);
+    }
+    .degree-card.selected {
+      border-color: #003087;
+      background: #eef3fb;
+    }
+    .degree-card .badge {
+      display: inline-block;
+      background: #003087; color: white;
+      border-radius: 8px; padding: 6px 14px;
+      font-size: 22px; font-weight: 800; letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .degree-card.selected .badge { background: #002060; }
+    .degree-card .label { font-size: 13px; color: #374151; font-weight: 500; }
+
+    /* ── Program list ── */
+    .program-search {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid #d1d5db; border-radius: 8px;
+      font-size: 14px; margin-bottom: 14px; outline: none;
+    }
+    .program-search:focus { border-color: #003087; }
+    .program-list { max-height: 360px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
+    .program-item {
+      padding: 14px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background .15s;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .program-item:last-child { border-bottom: none; }
+    .program-item:hover { background: #f0f4f8; }
+    .program-item.selected { background: #eef3fb; }
+    .program-item .prog-code {
+      background: #e0e7ef; color: #003087;
+      border-radius: 6px; padding: 3px 8px;
+      font-size: 11px; font-weight: 700;
+      white-space: nowrap;
+    }
+    .program-item .prog-name { font-size: 14px; font-weight: 500; }
+
+    /* ── Requirements table ── */
+    .req-table-wrap { overflow-x: auto; }
+    table.req-table {
+      width: 100%; border-collapse: collapse; font-size: 13.5px;
+    }
+    .req-table th {
+      background: #003087; color: white;
+      padding: 10px 14px; text-align: left; font-weight: 600;
+    }
+    .req-table td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; }
+    .req-table tr.row-category td {
+      background: #eef3fb; font-weight: 700; color: #003087;
+      font-size: 14px;
+    }
+    .req-table tr.row-discipline td {
+      background: #f8fafc; font-weight: 600; color: #374151;
+      padding-left: 28px;
+    }
+    .req-table tr.row-course td { padding-left: 44px; }
+    .req-table tr.row-course:hover td { background: #fafbfc; }
+    .credits-badge {
+      display: inline-block;
+      background: #e0e7ef; color: #003087;
+      border-radius: 99px; padding: 2px 10px;
+      font-size: 12px; font-weight: 700; white-space: nowrap;
+    }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .btn {
+      padding: 11px 24px; border-radius: 9px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      border: none; transition: background .2s, transform .1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: #003087; color: white; }
+    .btn-primary:hover { background: #00226b; }
+    .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+
+    /* ── Transcript / PDF upload ── */
+    .upload-zone {
+      border: 2.5px dashed #c7d2e0;
+      border-radius: 14px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #f8fafc;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: #003087;
+      background: #eef3fb;
+    }
+    .upload-zone .icon { font-size: 42px; margin-bottom: 12px; }
+    .upload-zone .upload-title { font-size: 16px; font-weight: 600; color: #374151; }
+    .upload-zone .upload-sub   { font-size: 13px; color: #9ca3af; margin-top: 6px; }
+    .upload-zone .browse-link  { color: #003087; text-decoration: underline; cursor: pointer; }
+
+    .extracted-preview {
+      margin-top: 20px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .extracted-preview .preview-header {
+      background: #eef3fb;
+      padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #d1d5db;
+    }
+    .extracted-preview .preview-header span { font-size: 13px; font-weight: 600; color: #003087; }
+    .extracted-preview .preview-header button {
+      background: none; border: none; color: #6b7280;
+      font-size: 12px; cursor: pointer; text-decoration: underline;
+    }
+    .transcript-area {
+      width: 100%; min-height: 200px; max-height: 320px;
+      border: none; outline: none;
+      padding: 14px; font-size: 12.5px; font-family: "Courier New", monospace;
+      line-height: 1.6; resize: vertical;
+      background: white;
+    }
+    .transcript-hint { font-size: 12px; color: #9ca3af; margin-top: 8px; }
+
+    /* ── Results ── */
+    .result-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: #f8fafc; border-radius: 10px;
+      padding: 16px 20px; text-align: center;
+      border: 1px solid #e5e7eb;
+    }
+    .stat-card .val {
+      font-size: 28px; font-weight: 800; color: #003087; line-height: 1;
+    }
+    .stat-card .lbl { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+    .section-title {
+      font-size: 15px; font-weight: 700; color: #003087;
+      margin: 24px 0 12px; padding-bottom: 6px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    table.eval-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    .eval-table th {
+      background: #003087; color: white;
+      padding: 9px 12px; text-align: left; font-weight: 600;
+    }
+    .eval-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+    .eval-table tr:nth-child(even) td { background: #fafbfc; }
+    .eval-table tr:hover td { background: #f0f4f8; }
+
+    .badge-match {
+      display: inline-block; border-radius: 99px;
+      padding: 2px 10px; font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .match-direct     { background: #dcfce7; color: #15803d; }
+    .match-equivalent { background: #fef9c3; color: #a16207; }
+    .match-pending    { background: #fee2e2; color: #b91c1c; }
+
+    .waiver-banner {
+      background: #dcfce7; border: 1px solid #86efac;
+      border-radius: 10px; padding: 14px 18px;
+      color: #15803d; font-size: 13.5px; font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .action-list { list-style: none; }
+    .action-list li {
+      padding: 8px 14px; margin-bottom: 6px;
+      background: #fef9c3; border-left: 4px solid #ca8a04;
+      border-radius: 0 8px 8px 0; font-size: 13px;
+    }
+
+    /* ── Loading spinner ── */
+    .spinner-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 0; gap: 16px;
+    }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #003087;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-text { color: #6b7280; font-size: 14px; }
+
+    /* ── Program summary banner ── */
+    .selected-program-banner {
+      background: #eef3fb; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .selected-program-banner .code {
+      background: #003087; color: white;
+      border-radius: 8px; padding: 6px 12px;
+      font-weight: 700; font-size: 13px; white-space: nowrap;
+    }
+    .selected-program-banner .name { font-size: 14px; font-weight: 600; color: #003087; }
+    .selected-program-banner .type { font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">KU</div>
+  <div>
+    <h1>Credit Transfer Evaluation</h1>
+    <p>Keiser University — Academic Advisor Tool</p>
+  </div>
+  <button class="restart" onclick="restart()">Start Over</button>
+</header>
+
+<!-- Progress tabs -->
+<div id="progress-bar">
+  <div class="step-tab active" id="tab-1"><span class="num">1</span> Degree Type</div>
+  <div class="step-tab" id="tab-2"><span class="num">2</span> Program</div>
+  <div class="step-tab" id="tab-3"><span class="num">3</span> Requirements</div>
+  <div class="step-tab" id="tab-4"><span class="num">4</span> Transcript</div>
+  <div class="step-tab" id="tab-5"><span class="num">5</span> Evaluation</div>
+</div>
+
+<main>
+
+  <!-- STEP 1: Degree Type -->
+  <div class="step-panel active" id="step-1">
+    <div class="card">
+      <h2>Step 1 — Select Degree Type</h2>
+      <p class="subtitle">Choose the type of degree you are enrolling in at Keiser University.</p>
+      <div class="degree-grid" id="degree-grid">
+        <div class="spinner-wrap"><div class="spinner"></div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-step1" onclick="goToStep2()" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Program -->
+  <div class="step-panel" id="step-2">
+    <div class="card">
+      <h2>Step 2 — Select Your Program</h2>
+      <p class="subtitle" id="step2-subtitle">Programs available for the selected degree type.</p>
+      <input class="program-search" id="program-search" placeholder="Search programs..." oninput="filterPrograms()" />
+      <div class="program-list" id="program-list">
+        <div class="spinner-wrap"><div class="spinner"></div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+        <button class="btn btn-primary" id="btn-step2" onclick="goToStep3()" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Requirements -->
+  <div class="step-panel" id="step-3">
+    <div class="card">
+      <h2>Step 3 — Program Requirements</h2>
+      <p class="subtitle">Review the required courses for your program before proceeding.</p>
+      <div id="req-content">
+        <div class="spinner-wrap"><div class="spinner"></div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+        <button class="btn btn-primary" onclick="goToStep4()">Continue to Transcript</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Transcript -->
+  <div class="step-panel" id="step-4">
+    <div class="card">
+      <h2>Step 4 — Upload Your Transcript</h2>
+      <p class="subtitle">Upload your transcript PDF. The agent will read it and extract your completed courses automatically.</p>
+      <div id="step4-program-banner"></div>
+
+      <!-- Upload zone -->
+      <div class="upload-zone" id="upload-zone"
+           onclick="document.getElementById('pdf-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <div class="icon">📄</div>
+        <div class="upload-title">Drop your transcript PDF here</div>
+        <div class="upload-sub">or <span class="browse-link">browse to upload</span></div>
+        <div class="upload-sub" style="margin-top:10px">Supports text-based PDF transcripts</div>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="onFileSelected(event)"/>
+
+      <!-- Extracted text preview (hidden until PDF uploaded) -->
+      <div class="extracted-preview" id="extracted-preview" style="display:none">
+        <div class="preview-header">
+          <span id="preview-filename">transcript.pdf</span>
+          <button onclick="clearUpload()">Remove &amp; upload different file</button>
+        </div>
+        <textarea class="transcript-area" id="transcript-text"
+          placeholder="Extracted text will appear here..."></textarea>
+      </div>
+
+      <p class="transcript-hint" id="upload-hint">Courses with a grade of D or F will automatically be excluded from the evaluation.</p>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
+        <button class="btn btn-primary" id="btn-evaluate" onclick="runEvaluation()" disabled>Evaluate Transfer Credits</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: Results -->
+  <div class="step-panel" id="step-5">
+    <div class="card">
+      <h2>Step 5 — Transfer Credit Evaluation</h2>
+      <p class="subtitle" id="result-subtitle"></p>
+      <div id="result-content">
+        <div class="spinner-wrap">
+          <div class="spinner"></div>
+          <p class="spinner-text">Evaluating your transcript against program requirements…</p>
+        </div>
+      </div>
+      <div class="btn-row" id="result-btn-row" style="display:none">
+        <button class="btn btn-secondary" onclick="goToStep(4)">Back</button>
+        <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  let selectedDegreeType = null;
+  let selectedProgram    = null;  // { key, program_name, full_name, program_code }
+  let allPrograms        = [];
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+
+  function goToStep(n) {
+    document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+    document.getElementById(`step-${n}`).classList.add("active");
+    for (let i = 1; i <= 5; i++) {
+      const tab = document.getElementById(`tab-${i}`);
+      tab.classList.remove("active", "done");
+      if (i < n) tab.classList.add("done");
+      if (i === n) tab.classList.add("active");
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function restart() {
+    selectedDegreeType = null;
+    selectedProgram    = null;
+    allPrograms        = [];
+    document.getElementById("program-search").value = "";
+    document.getElementById("transcript-text").value = "";
+    document.getElementById("result-content").innerHTML = "";
+    document.getElementById("result-btn-row").style.display = "none";
+    document.getElementById("btn-step1").disabled = true;
+    document.getElementById("btn-step2").disabled = true;
+    loadDegreeTypes();
+    goToStep(1);
+  }
+
+  // ── Step 1: load degree types ──────────────────────────────────────────────
+
+  async function loadDegreeTypes() {
+    const grid = document.getElementById("degree-grid");
+    grid.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+    const res  = await fetch("/api/degree-types");
+    const types = await res.json();
+    grid.innerHTML = "";
+    types.forEach(t => {
+      const card = document.createElement("div");
+      card.className = "degree-card";
+      card.dataset.type = t.degree_type;
+      card.innerHTML = `<div class="badge">${t.short}</div><div class="label">${t.degree_type}</div>`;
+      card.onclick = () => selectDegreeType(t.degree_type, card);
+      grid.appendChild(card);
+    });
+  }
+
+  function selectDegreeType(type, card) {
+    document.querySelectorAll(".degree-card").forEach(c => c.classList.remove("selected"));
+    card.classList.add("selected");
+    selectedDegreeType = type;
+    document.getElementById("btn-step1").disabled = false;
+  }
+
+  async function goToStep2() {
+    if (!selectedDegreeType) return;
+    goToStep(2);
+    document.getElementById("step2-subtitle").textContent =
+      `Programs available for: ${selectedDegreeType}`;
+    document.getElementById("btn-step2").disabled = true;
+    const list = document.getElementById("program-list");
+    list.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+
+    const res = await fetch(`/api/programs?degree_type=${encodeURIComponent(selectedDegreeType)}`);
+    allPrograms = await res.json();
+    renderProgramList(allPrograms);
+  }
+
+  function renderProgramList(programs) {
+    const list = document.getElementById("program-list");
+    list.innerHTML = "";
+    programs.forEach(p => {
+      const item = document.createElement("div");
+      item.className = "program-item" + (selectedProgram && selectedProgram.key === p.key ? " selected" : "");
+      item.innerHTML = `<span class="prog-code">${p.program_code}</span><span class="prog-name">${p.full_name}</span>`;
+      item.onclick = () => selectProgram(p, item);
+      list.appendChild(item);
+    });
+    if (programs.length === 0) {
+      list.innerHTML = '<p style="padding:20px;color:#9ca3af;text-align:center">No programs found.</p>';
+    }
+  }
+
+  function filterPrograms() {
+    const q = document.getElementById("program-search").value.toLowerCase();
+    renderProgramList(allPrograms.filter(p =>
+      p.program_name.toLowerCase().includes(q) || p.full_name.toLowerCase().includes(q)
+    ));
+  }
+
+  function selectProgram(program, item) {
+    document.querySelectorAll(".program-item").forEach(i => i.classList.remove("selected"));
+    item.classList.add("selected");
+    selectedProgram = program;
+    document.getElementById("btn-step2").disabled = false;
+  }
+
+  // ── Step 3: requirements ───────────────────────────────────────────────────
+
+  async function goToStep3() {
+    if (!selectedProgram) return;
+    goToStep(3);
+    const wrap = document.getElementById("req-content");
+    wrap.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+
+    const res  = await fetch(`/api/program-requirements?key=${encodeURIComponent(selectedProgram.key)}`);
+    const data = await res.json();
+    renderRequirements(data, wrap);
+  }
+
+  function renderRequirements(data, wrap) {
+    let html = `
+      <div class="selected-program-banner">
+        <span class="code">${data.program_code}</span>
+        <div><div class="name">${data.full_name}</div><div class="type">${data.degree_type}</div></div>
+      </div>
+      <div class="req-table-wrap">
+      <table class="req-table">
+        <thead><tr>
+          <th style="width:55%">Course / Requirement</th>
+          <th style="width:20%">Code</th>
+          <th style="width:12%">Credits</th>
+        </tr></thead>
+        <tbody>`;
+
+    data.categories.forEach(cat => {
+      html += `<tr class="row-category">
+        <td colspan="2">${cat.name}</td>
+        <td><span class="credits-badge">${cat.total_credits} cr</span></td>
+      </tr>`;
+      cat.disciplines.forEach(disc => {
+        const showDisc = disc.name !== cat.name;
+        if (showDisc) {
+          html += `<tr class="row-discipline">
+            <td colspan="2">${disc.name}</td>
+            <td><span class="credits-badge">${disc.total_credits} cr</span></td>
+          </tr>`;
+        }
+        disc.courses.forEach(c => {
+          html += `<tr class="row-course">
+            <td>${c.name}</td>
+            <td style="font-family:monospace;font-size:12px">${c.code}</td>
+            <td><span class="credits-badge">${c.credits} cr</span></td>
+          </tr>`;
+        });
+      });
+    });
+
+    html += `</tbody></table></div>`;
+    wrap.innerHTML = html;
+  }
+
+  // ── Step 4: PDF upload ─────────────────────────────────────────────────────
+
+  function goToStep4() {
+    goToStep(4);
+    if (selectedProgram) {
+      document.getElementById("step4-program-banner").innerHTML = `
+        <div class="selected-program-banner" style="margin-bottom:16px">
+          <span class="code">${selectedProgram.program_code}</span>
+          <div><div class="name">${selectedProgram.full_name}</div></div>
+        </div>`;
+    }
+  }
+
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById("upload-zone").classList.add("drag-over");
+  }
+  function onDragLeave(e) {
+    document.getElementById("upload-zone").classList.remove("drag-over");
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById("upload-zone").classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file) uploadPDF(file);
+  }
+  function onFileSelected(e) {
+    const file = e.target.files[0];
+    if (file) uploadPDF(file);
+  }
+
+  async function uploadPDF(file) {
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Please upload a PDF file.");
+      return;
+    }
+
+    // Show loading state on upload zone
+    const zone = document.getElementById("upload-zone");
+    zone.innerHTML = `
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div class="upload-title">Reading PDF…</div>
+      <div class="upload-sub">${file.name}</div>`;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res  = await fetch("/api/extract-pdf", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.error) {
+        zone.innerHTML = `
+          <div class="icon">⚠️</div>
+          <div class="upload-title" style="color:#b91c1c">${data.error}</div>
+          <div class="upload-sub browse-link" onclick="document.getElementById('pdf-input').click()">Try another file</div>`;
+        return;
+      }
+
+      // Show extracted text
+      zone.style.display = "none";
+      const preview = document.getElementById("extracted-preview");
+      preview.style.display = "block";
+      document.getElementById("preview-filename").textContent = `✓ ${file.name}`;
+      document.getElementById("transcript-text").value = data.text;
+      document.getElementById("btn-evaluate").disabled = false;
+
+    } catch (err) {
+      zone.innerHTML = `
+        <div class="icon">⚠️</div>
+        <div class="upload-title" style="color:#b91c1c">Upload failed. Server may not be running.</div>
+        <div class="upload-sub browse-link" onclick="document.getElementById('pdf-input').click()">Try again</div>`;
+    }
+  }
+
+  function clearUpload() {
+    document.getElementById("pdf-input").value = "";
+    document.getElementById("extracted-preview").style.display = "none";
+    document.getElementById("transcript-text").value = "";
+    document.getElementById("btn-evaluate").disabled = true;
+    const zone = document.getElementById("upload-zone");
+    zone.style.display = "block";
+    zone.innerHTML = `
+      <div class="icon">📄</div>
+      <div class="upload-title">Drop your transcript PDF here</div>
+      <div class="upload-sub">or <span class="browse-link">browse to upload</span></div>
+      <div class="upload-sub" style="margin-top:10px">Supports text-based PDF transcripts</div>`;
+  }
+
+  // ── Step 5: evaluation ─────────────────────────────────────────────────────
+
+  async function runEvaluation() {
+    const text = document.getElementById("transcript-text").value.trim();
+    if (!text) { alert("Please paste your transcript text first."); return; }
+
+    goToStep(5);
+    document.getElementById("result-subtitle").textContent =
+      `Evaluating transfer credits for: ${selectedProgram.full_name}`;
+    document.getElementById("result-content").innerHTML = `
+      <div class="spinner-wrap">
+        <div class="spinner"></div>
+        <p class="spinner-text">Analyzing your transcript against program requirements…<br>This may take 20–40 seconds.</p>
+      </div>`;
+    document.getElementById("result-btn-row").style.display = "none";
+
+    try {
+      const res = await fetch("/api/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ program_key: selectedProgram.key, transcript_text: text }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById("result-content").innerHTML =
+          `<p style="color:#b91c1c;padding:20px"><strong>Error:</strong> ${data.error}</p>`;
+        return;
+      }
+      renderResults(data);
+      document.getElementById("result-btn-row").style.display = "flex";
+    } catch (err) {
+      document.getElementById("result-content").innerHTML =
+        `<p style="color:#b91c1c;padding:20px"><strong>Connection error.</strong> Please try again.</p>`;
+    }
+  }
+
+  function evalTable(headers, rows) {
+    if (!rows || rows.length === 0) return `<p style="color:#9ca3af;font-size:13px;margin:8px 0 16px">None found.</p>`;
+    let t = `<div style="overflow-x:auto;margin-bottom:4px"><table class="eval-table"><thead><tr>`;
+    headers.forEach(h => { t += `<th>${h}</th>`; });
+    t += `</tr></thead><tbody>`;
+    rows.forEach(r => {
+      t += `<tr>`;
+      r.forEach((cell, i) => {
+        const mono = (i === 0 || i === 3) ? `style="font-family:monospace;font-size:12px"` : "";
+        t += `<td ${mono}>${cell ?? ""}</td>`;
+      });
+      t += `</tr>`;
+    });
+    t += `</tbody></table></div>`;
+    return t;
+  }
+
+  function renderResults(d) {
+    const strong    = d.strong_matches    || [];
+    const potential = d.potential_matches || [];
+    const courses   = d.courses           || [];
+    const addl      = d.additional_components || [];
+    const notices   = d.summary_notices   || [];
+    const accred    = d.accreditation     || {};
+
+    let html = "";
+
+    // ── Summary stat cards ────────────────────────────────────────────────
+    html += `<div class="result-summary">
+      <div class="stat-card">
+        <div class="val">${d.total_transfer_credits ?? 0}</div>
+        <div class="lbl">Transfer Credits (Strong)</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">${strong.length}</div>
+        <div class="lbl">Strong Matches</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">${potential.length}</div>
+        <div class="lbl">Potential Matches</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">${courses.length}</div>
+        <div class="lbl">Courses on Transcript</div>
+      </div>
+    </div>`;
+
+    // ── School info row ───────────────────────────────────────────────────
+    html += `<div class="section-title">1. School Information</div>`;
+    const accredBadge = accred.is_regionally_accredited === true
+      ? `<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✓ Regionally Accredited</span>`
+      : accred.is_regionally_accredited === false
+      ? `<span style="background:#fee2e2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✗ Not Regionally Accredited</span>`
+      : `<span style="background:#fef9c3;color:#a16207;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">⚠ Verify Manually</span>`;
+
+    html += `<table class="eval-table" style="margin-bottom:8px">
+      <tbody>
+        <tr><td style="width:200px;font-weight:600;color:#374151">School Name</td><td>${d.school_name || "—"}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">Accreditation</td><td>${accredBadge} &nbsp;<span style="font-size:12px;color:#6b7280">${accred.note || (accred.accreditations || []).join(", ") || ""}</span></td></tr>
+        <tr><td style="font-weight:600;color:#374151">Credit System</td><td>${d.credit_system_note || d.credit_system || "—"}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">Bachelor's Degree</td><td>${d.has_bachelor_degree ? `<strong style="color:#15803d">Yes</strong> — ${d.bachelor_degree_info || ""}` : "No"}</td></tr>
+      </tbody>
+    </table>`;
+
+    // ── Gen Ed waiver ─────────────────────────────────────────────────────
+    if (d.gen_ed_waiver && d.gen_ed_waiver !== "none") {
+      html += `<div class="waiver-banner">✓ ${d.gen_ed_waiver_note || "General Education requirements waived based on prior degree."}</div>`;
+    }
+
+    // ── Notices ───────────────────────────────────────────────────────────
+    if (notices.length > 0) {
+      html += `<div class="section-title">Summary & Notices</div><ul class="action-list" style="margin-bottom:16px">`;
+      notices.forEach(n => { html += `<li>${n}</li>`; });
+      html += `</ul>`;
+    }
+
+    // ── Courses extracted ─────────────────────────────────────────────────
+    html += `<div class="section-title">2. Courses Taken (Extracted from Transcript)</div>`;
+    html += evalTable(
+      ["Course Code", "Course Name", "Credits (Original)", "Credits (Semester)", "Grade"],
+      courses.map(c => [c.code, c.name, c.credits_original, c.credits_semester, c.grade])
+    );
+
+    // ── Additional components ─────────────────────────────────────────────
+    if (addl.length > 0) {
+      html += `<div class="section-title">Additional Academic Components</div>`;
+      html += evalTable(
+        ["Type", "Description", "Value"],
+        addl.map(a => [a.type, a.description, a.value])
+      );
+    }
+
+    // ── Strong matches ────────────────────────────────────────────────────
+    html += `<div class="section-title">3. Strong Matches — Recommended for Transfer</div>`;
+    html += evalTable(
+      ["KU Course Code", "KU Course Name", "KU Credits Req.", "Transfer Course Code", "Credits Earned", "Grade Earned"],
+      strong.map(m => [m.ku_code, m.ku_name, m.ku_credits, m.transfer_code, m.transfer_credits, m.transfer_grade])
+    );
+
+    // ── Potential matches ─────────────────────────────────────────────────
+    html += `<div class="section-title">4. Potential Matches — Advisor Review Required</div>`;
+    html += evalTable(
+      ["KU Course Code", "KU Course Name", "KU Credits Req.", "Transfer Course Code", "Credits Earned", "Grade Earned"],
+      potential.map(m => [m.ku_code, m.ku_name, m.ku_credits, m.transfer_code, m.transfer_credits, m.transfer_grade])
+    );
+
+    document.getElementById("result-content").innerHTML = html;
+  }
+
+  // ── init ───────────────────────────────────────────────────────────────────
+  loadDegreeTypes();
+</script>
+</body>
+</html>

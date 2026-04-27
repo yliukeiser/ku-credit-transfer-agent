@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(pip install *)",
+      "Read(//c/Users/YangLiu.LAPTOP-M2DB3BSD/**)",
+      "Bash(python --version)",
+      "Bash(python3 --version)",
+      "Bash(/c/Users/YangLiu.LAPTOP-M2DB3BSD/AppData/Local/Programs/Python/Python38/python.exe --version)",
+      "Bash(python -c \"from data_loader import get_data; d = get_data\\(\\); progs = d['programs']; print\\(f'Programs loaded: {len\\(progs\\)}'\\); print\\(f'Policy rules: {len\\(d[\\\\\"policy\\\\\"][\\\\\"rules\\\\\"]\\)}'\\); print\\(f'Special rules: {len\\(d[\\\\\"special_rules_index\\\\\"]\\)}'\\); print\\('First 3 programs:'\\); [print\\(' ', k\\) for k in list\\(progs.keys\\(\\)\\)[:3]]\")",
+      "Bash(python -c \"from tools import TOOLS, handle_tool; import json; r = handle_tool\\('search_programs', {'query': 'Accounting'}\\); data = json.loads\\(r\\); print\\(f'search_programs: {data[\\\\\"count\\\\\"]} results'\\); r2 = handle_tool\\('get_program_requirements', {'program_key': 'Accounting|Associate of Arts'}\\); d2 = json.loads\\(r2\\); cats = list\\(d2['program']['categories'].keys\\(\\)\\); print\\(f'get_program_requirements: {len\\(cats\\)} categories: {cats[:3]}'\\); r3 = handle_tool\\('get_transfer_policy', {}\\); d3 = json.loads\\(r3\\); print\\(f'get_transfer_policy: {len\\(d3[\\\\\"rules\\\\\"]\\)} rules, {len\\(d3[\\\\\"aice_equivalencies\\\\\"]\\)} AICE entries'\\)\")",
+      "Bash(python -c \"import agent; print\\('agent.py imports OK'\\); print\\(f'Model: {agent.MODEL}'\\); print\\(f'Tools registered: {len\\(agent.TOOLS\\)}'\\)\")",
+      "Bash(python -c \"from app import app; print\\('app.py imports OK'\\)\")",
+      "Bash(python -c ' *)",
+      "PowerShell($proc = Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if \\($proc\\) { Stop-Process -Id $proc -Force; Write-Host \"Killed process $proc on port 5000\" } else { Write-Host \"No process on port 5000\" })",
+      "Bash(python -c \"from app import app; print\\('OK'\\)\")",
+      "Bash(python app.py)",
+      "Bash(python -c \"import pdfplumber; print\\('pdfplumber OK'\\)\")",
+      "Bash(python -c \"from app import app; print\\('app.py OK'\\); rules = [r.rule for r in app.url_map.iter_rules\\(\\)]; print\\('Routes:', rules\\)\")",
+      "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\ProgramCourseReqIndexTable.xlsx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")",
+      "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\ProgramTransferPolicySpecialRules.xlsx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")",
+      "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\Undergraduate Transfer of Credit Policy.docx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")"
+    ]
+  }
+}

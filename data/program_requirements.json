@@ -1,0 +1,157 @@
+{
+  "programs": {
+    "CS-BSC": {
+      "name": "Bachelor of Science in Computer Science",
+      "total_credits_required": 120,
+      "requirements": [
+        {
+          "req_id": "CS101",
+          "name": "Introduction to Programming",
+          "credits": 3,
+          "category": "core",
+          "description": "Fundamentals of programming using Python or Java"
+        },
+        {
+          "req_id": "CS201",
+          "name": "Data Structures and Algorithms",
+          "credits": 3,
+          "category": "core",
+          "description": "Arrays, linked lists, trees, sorting, searching"
+        },
+        {
+          "req_id": "CS301",
+          "name": "Operating Systems",
+          "credits": 3,
+          "category": "core",
+          "description": "Process management, memory, file systems"
+        },
+        {
+          "req_id": "CS302",
+          "name": "Computer Networks",
+          "credits": 3,
+          "category": "core",
+          "description": "TCP/IP, protocols, network architecture"
+        },
+        {
+          "req_id": "CS401",
+          "name": "Software Engineering",
+          "credits": 3,
+          "category": "core",
+          "description": "SDLC, design patterns, testing, agile"
+        },
+        {
+          "req_id": "CS310",
+          "name": "Database Systems",
+          "credits": 3,
+          "category": "core",
+          "description": "Relational databases, SQL, normalization, transactions"
+        },
+        {
+          "req_id": "MATH201",
+          "name": "Discrete Mathematics",
+          "credits": 3,
+          "category": "mathematics",
+          "description": "Logic, sets, graph theory, combinatorics, proofs"
+        },
+        {
+          "req_id": "MATH202",
+          "name": "Linear Algebra",
+          "credits": 3,
+          "category": "mathematics",
+          "description": "Vectors, matrices, eigenvalues, linear transformations"
+        },
+        {
+          "req_id": "MATH101",
+          "name": "Calculus I",
+          "credits": 4,
+          "category": "mathematics",
+          "description": "Limits, derivatives, integrals"
+        },
+        {
+          "req_id": "STAT201",
+          "name": "Probability and Statistics",
+          "credits": 3,
+          "category": "mathematics",
+          "description": "Probability distributions, hypothesis testing, regression"
+        },
+        {
+          "req_id": "CS elective",
+          "name": "CS Elective (any upper-division CS course)",
+          "credits": 9,
+          "category": "elective",
+          "description": "Any three upper-division CS courses approved by advisor",
+          "min_courses": 3
+        },
+        {
+          "req_id": "GEN-ED",
+          "name": "General Education",
+          "credits": 18,
+          "category": "general_education",
+          "description": "Writing, humanities, social sciences, natural sciences"
+        }
+      ]
+    },
+    "SE-BSC": {
+      "name": "Bachelor of Science in Software Engineering",
+      "total_credits_required": 124,
+      "requirements": [
+        {
+          "req_id": "CS101",
+          "name": "Introduction to Programming",
+          "credits": 3,
+          "category": "core",
+          "description": "Fundamentals of programming"
+        },
+        {
+          "req_id": "CS201",
+          "name": "Data Structures and Algorithms",
+          "credits": 3,
+          "category": "core",
+          "description": "Data structures and algorithm analysis"
+        },
+        {
+          "req_id": "SE301",
+          "name": "Software Design and Architecture",
+          "credits": 3,
+          "category": "core",
+          "description": "Design patterns, architectural styles, UML"
+        },
+        {
+          "req_id": "SE401",
+          "name": "Software Testing and Quality Assurance",
+          "credits": 3,
+          "category": "core",
+          "description": "Unit testing, integration testing, TDD, CI/CD"
+        },
+        {
+          "req_id": "CS310",
+          "name": "Database Systems",
+          "credits": 3,
+          "category": "core",
+          "description": "Relational databases, SQL, design"
+        },
+        {
+          "req_id": "MATH101",
+          "name": "Calculus I",
+          "credits": 4,
+          "category": "mathematics",
+          "description": "Differential and integral calculus"
+        },
+        {
+          "req_id": "MATH201",
+          "name": "Discrete Mathematics",
+          "credits": 3,
+          "category": "mathematics",
+          "description": "Logic, sets, combinatorics"
+        },
+        {
+          "req_id": "GEN-ED",
+          "name": "General Education",
+          "credits": 18,
+          "category": "general_education",
+          "description": "Core liberal arts requirements"
+        }
+      ]
+    }
+  }
+}
