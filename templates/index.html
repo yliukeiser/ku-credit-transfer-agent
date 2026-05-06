@@ -795,7 +795,6 @@
     // ── School info row ───────────────────────────────────────────────────
     html += `<div class="section-title">1. School Information</div>`;
 
-    const accred = d.accreditation || {};
     const usdebadge = accred.recognized === true
       ? `<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✓ USDE-Recognized</span>`
       : accred.recognized === false
