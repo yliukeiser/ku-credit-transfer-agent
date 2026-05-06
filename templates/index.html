@@ -489,17 +489,24 @@
   async function loadDegreeTypes() {
     const grid = document.getElementById("degree-grid");
     grid.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
-    const res  = await fetch("/api/degree-types");
-    const types = await res.json();
-    grid.innerHTML = "";
-    types.forEach(t => {
-      const card = document.createElement("div");
-      card.className = "degree-card";
-      card.dataset.type = t.degree_type;
-      card.innerHTML = `<div class="badge">${t.short}</div><div class="label">${t.degree_type}</div>`;
-      card.onclick = () => selectDegreeType(t.degree_type, card);
-      grid.appendChild(card);
-    });
+    try {
+      const res   = await fetch("/api/degree-types");
+      const types = await res.json();
+      grid.innerHTML = "";
+      types.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "degree-card";
+        card.dataset.type = t.degree_type;
+        card.innerHTML = `<div class="badge">${t.short}</div><div class="label">${t.degree_type}</div>`;
+        card.onclick = () => selectDegreeType(t.degree_type, card);
+        grid.appendChild(card);
+      });
+    } catch (err) {
+      grid.innerHTML = `<p style="color:#b91c1c;padding:16px;font-size:14px">
+        Failed to load degree types: ${err.message}<br>
+        <a href="javascript:loadDegreeTypes()" style="color:#003087">Click to retry</a>
+      </p>`;
+    }
   }
 
   function selectDegreeType(type, card) {
