@@ -20,7 +20,12 @@
       "Bash(python -c \"from app import app; print\\('app.py OK'\\); rules = [r.rule for r in app.url_map.iter_rules\\(\\)]; print\\('Routes:', rules\\)\")",
       "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\ProgramCourseReqIndexTable.xlsx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")",
       "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\ProgramTransferPolicySpecialRules.xlsx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")",
-      "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\Undergraduate Transfer of Credit Policy.docx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")"
+      "Bash(cp \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Downloads\\\\Undergraduate Transfer of Credit Policy.docx\" \"C:\\\\Users\\\\YangLiu.LAPTOP-M2DB3BSD\\\\Desktop\\\\ClaudeCode\\\\CreditTransferAgent\\\\data/\")",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(cp \"/c/Users/YangLiu.LAPTOP-M2DB3BSD/Downloads/KEISER UNIVERSITY TRANSFER CREDIT EVALUATION RULES.docx\" \"/c/Users/YangLiu.LAPTOP-M2DB3BSD/Desktop/ClaudeCode/CreditTransferAgent/data/\")",
+      "Bash(cp \"/c/Users/YangLiu.LAPTOP-M2DB3BSD/Downloads/FL Common Course Numbering System institution List.xlsx\" \"/c/Users/YangLiu.LAPTOP-M2DB3BSD/Desktop/ClaudeCode/CreditTransferAgent/data/\")"
     ]
   }
 }

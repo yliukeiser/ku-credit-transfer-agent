@@ -13,7 +13,7 @@ import pdfplumber
 import requests as http_requests
 from flask import Flask, jsonify, render_template, request
 
-from data_loader import get_data
+from data_loader import get_data, is_ccns_institution
 
 app = Flask(__name__)
 app.secret_key = "ku-credit-transfer-secret-2024"
@@ -27,8 +27,12 @@ EXTRACT_SYSTEM = """You are a university transcript analyst. Extract all informa
 Return ONLY valid JSON — no markdown fences, no explanation outside the JSON:
 {
   "school_name": "exact name as it appears on the transcript",
+  "accreditation_mentioned": "accreditation body stated on transcript, or null if not mentioned",
   "credit_system": "semester" or "quarter",
-  "credit_system_note": "e.g. Transcript uses semester hours" or "Transcript uses quarter hours. All credits converted to semester hours by dividing by 1.5.",
+  "credit_system_note": "e.g. Transcript uses semester hours" or "Transcript uses quarter hours. All credits converted to semester hours (divided by 1.5).",
+  "gpa": number or null,
+  "degree_awarded": "exact degree name if a degree was conferred, e.g. Associate of Arts, Bachelor of Science — null if none",
+  "degree_type": "AA" or "AS" or "BA" or "BS" or "AAS" or "Other" or null,
   "has_bachelor_degree": true or false,
   "bachelor_degree_info": "degree name and year if found, otherwise null",
   "courses": [
@@ -47,18 +51,17 @@ Return ONLY valid JSON — no markdown fences, no explanation outside the JSON:
       "value": "value or detail"
     }
   ],
-  "summary_notices": [
-    "any important notice, e.g. quarter-to-semester conversion performed, missing grades, GPA, etc."
-  ]
+  "summary_notices": ["notice 1", "notice 2"]
 }
 
 Rules:
-- Extract EVERY course listed, including those with D or F grades (grade filtering happens later).
-- If the transcript uses QUARTER HOURS: set credits_semester = round(credits_original / 1.5, 1) for each course. Add a conversion notice.
-- If the transcript uses SEMESTER HOURS: credits_semester = credits_original.
-- Set has_bachelor_degree = true if the transcript shows a completed Bachelor's degree was awarded.
-- Include test scores (AP, CLEP, DANTES), certificates, or program notes in additional_components.
-- summary_notices should include: conversion info, any GPA found, missing data, unusual grades, or other relevant alerts.
+- Extract EVERY course listed, including D/F grades (filtering happens later).
+- If QUARTER HOURS: credits_semester = round(credits_original / 1.5, 1). Add a conversion notice.
+- If SEMESTER HOURS: credits_semester = credits_original.
+- degree_type: classify awarded degree as AA, AS, BA, BS, AAS, or Other.
+- has_bachelor_degree = true only if a Bachelor's degree was actually awarded/conferred.
+- Include AP, CLEP, DANTES scores and certificates in additional_components.
+- summary_notices: include GPA found, credit conversion, missing data, unusual grades.
 """
 
 # ── Phase 2: Course Mapping Prompt ────────────────────────────────────────────
@@ -66,29 +69,39 @@ Rules:
 MAPPING_SYSTEM = """You are a Keiser University (KU) transfer credit evaluator.
 
 You are given:
-1. PROGRAM_REQUIREMENTS — the list of required KU courses. This is the SOURCE OF TRUTH for all KU course data.
-2. TRANSCRIPT_COURSES — courses extracted from the student's transcript. This is the SOURCE OF TRUTH for all transfer course data.
+1. PROGRAM_REQUIREMENTS — required KU courses. SOURCE OF TRUTH for all KU course data.
+2. TRANSCRIPT_COURSES — student courses with grade C or higher only. SOURCE OF TRUTH for transfer data.
+3. GEN_ED_STATUS — pre-determined waiver status (do not re-evaluate this).
 
-Your task: For each course in PROGRAM_REQUIREMENTS, determine if any TRANSCRIPT_COURSES course can satisfy it.
+=== PRE-EVALUATION: GEN ED SCOPE ===
+Act on GEN_ED_STATUS exactly as follows — do NOT re-state or re-explain the waiver rules:
+- "Waived (Florida AA CCNS)": SKIP all lower-division general education courses in PROGRAM_REQUIREMENTS. Only match program-required (non-GenEd) courses.
+- "Waived (Bachelor Degree)": SKIP ALL general education courses. Only match program-required courses.
+- "Not Waived": Evaluate ALL PROGRAM_REQUIREMENTS courses.
 
-Match criteria (use all three together):
-- Course code similarity (e.g. MAC2311 ↔ MATH 2311 or Calculus I)
-- Course name / subject similarity
-- Credit hours alignment (within 1 credit is acceptable)
+=== LEVEL COMPATIBILITY (MANDATORY — check before any match) ===
+Determine course level from first digit of course number:
+- 1xxx or 2xxx = Lower Division
+- 3xxx or 4xxx = Upper Division
 
-Important rules:
-- ONLY courses with a grade of C or higher (C-, B, A, etc.) qualify for transfer. Exclude D, F, W, I.
-- ku_code MUST come verbatim from PROGRAM_REQUIREMENTS — never invent or modify.
-- transfer_code MUST come verbatim from TRANSCRIPT_COURSES — never invent or modify.
-- Strong match: high confidence the course covers the same material.
-- Potential match: same subject area but not certain — worth advisor review.
-- If a KU course has no reasonable match at all, EXCLUDE it entirely. Do not include rows just to fill the table.
-- Verify every row before including it.
+Rules:
+- Lower Division transcript course (1xxx/2xxx) → can ONLY match Lower Division KU course (1xxx/2xxx). MUST NOT match 3xxx/4xxx.
+- Upper Division transcript course (3xxx/4xxx) → can match Upper Division KU course. May match lower ONLY if content is highly equivalent.
+- Level mismatch → EXCLUDE from all tables, no exceptions.
 
-Return ONLY valid JSON, no markdown:
+=== MATCHING CRITERIA (only after level check passes) ===
+Match using: course code similarity + course name/subject similarity + credit hours alignment.
+- Strong match: substantially equivalent content, credit hours equal or within 1.
+- Potential match: same subject area, less certain — worth advisor review.
+- No confident match → EXCLUDE entirely. Never include a row just to fill the table.
+
+=== VALIDATION (run before producing tables) ===
+- Every ku_code must exist verbatim in PROGRAM_REQUIREMENTS.
+- No ku_code should appear in TRANSCRIPT_COURSES codes.
+- Every transfer_code must exist verbatim in TRANSCRIPT_COURSES.
+
+Return ONLY valid JSON, no markdown fences:
 {
-  "gen_ed_waiver": "none" or "bachelor" or "aa_florida",
-  "gen_ed_waiver_note": "explanation or empty string",
   "strong_matches": [
     {
       "ku_code": "from PROGRAM_REQUIREMENTS verbatim",
@@ -115,39 +128,47 @@ Return ONLY valid JSON, no markdown:
 """
 
 
-# ── Accreditation check via DOE DAPIP API ─────────────────────────────────────
+# ── USDE recognition check via DOE DAPIP API ──────────────────────────────────
 
-def check_accreditation(school_name: str) -> dict:
-    """Query the DOE DAPIP API to check if a school is accredited."""
+def check_usde_recognition(school_name: str) -> dict:
+    """
+    Query DOE DAPIP to determine if a school is USDE-recognized.
+    Returns: {recognized: bool|None, institution_name, accreditations, note}
+    """
     try:
         url = "https://ope.ed.gov/dapip/api/institutions/search"
         params = {"name": school_name, "includeRecognizedStatus": "true"}
-        r = http_requests.get(url, params=params, timeout=6)
+        r = http_requests.get(url, params=params, timeout=8)
         if r.status_code == 200:
             data = r.json()
             institutions = data if isinstance(data, list) else data.get("institutionList", [])
             if institutions:
                 inst = institutions[0]
                 accred_list = inst.get("accreditationList", [])
-                regional_bodies = {
-                    "Higher Learning Commission", "SACSCOC", "MSCHE", "NECHE",
-                    "NWCCU", "WSCUC", "ACCJC"
-                }
-                regional = [a for a in accred_list
-                            if any(rb.lower() in str(a).lower() for rb in regional_bodies)]
+                accred_names = [
+                    str(a.get("agencyName", a)).strip()
+                    for a in accred_list if a
+                ]
                 return {
-                    "found": True,
+                    "recognized": True,
                     "institution_name": inst.get("institutionName", school_name),
-                    "is_regionally_accredited": len(regional) > 0,
-                    "accreditations": [str(a.get("agencyName", a)) for a in accred_list[:3]],
+                    "accreditations": accred_names[:5],
                     "note": ""
                 }
-            return {"found": False, "is_regionally_accredited": None,
-                    "note": f"'{school_name}' not found in DOE DAPIP database. Manual verification required."}
+            return {
+                "recognized": False,
+                "institution_name": school_name,
+                "accreditations": [],
+                "note": f"'{school_name}' was not found in the U.S. Department of Education DAPIP database."
+            }
     except Exception:
         pass
-    return {"found": None, "is_regionally_accredited": None,
-            "note": "Could not reach DOE DAPIP. Verify accreditation manually at https://ope.ed.gov/dapip/"}
+    return {
+        "recognized": None,
+        "institution_name": school_name,
+        "accreditations": [],
+        "note": "Could not reach DOE DAPIP (network issue). Manual verification required at https://ope.ed.gov/dapip/"
+    }
 
 
 def clean_json(raw: str) -> str:
@@ -346,30 +367,65 @@ def evaluate():
     except Exception as e:
         return jsonify({"error": f"Phase 1 (extraction) failed: {str(e)}"}), 500
 
-    # ── Accreditation check ────────────────────────────────────────────────────
-    school_name  = extracted.get("school_name", "")
-    accred_result = check_accreditation(school_name) if school_name else {
-        "found": None, "note": "School name not found in transcript."
+    # ── USDE recognition check ─────────────────────────────────────────────────
+    school_name   = extracted.get("school_name", "")
+    accred_on_doc = extracted.get("accreditation_mentioned")
+    usde          = check_usde_recognition(school_name) if school_name else {
+        "recognized": None, "note": "School name not found in transcript.", "accreditations": []
     }
 
-    # ── Phase 2: Map courses ───────────────────────────────────────────────────
-    # Only pass courses with grade C or better to the mapping step
-    PASSING_GRADES = {"A+","A","A-","B+","B","B-","C+","C","S","P","CR","TR"}
-    eligible = [c for c in extracted.get("courses", [])
-                if str(c.get("grade","")).upper().strip() in PASSING_GRADES
-                or (len(str(c.get("grade",""))) == 1
-                    and str(c.get("grade","")).upper() in {"A","B","C","S","P"})]
+    # If school is definitively NOT USDE-recognized → stop here
+    if usde["recognized"] is False:
+        return jsonify({
+            "blocked": True,
+            "blocked_reason": f"This institution is not USDE-recognized, and credits are not transferable.",
+            "school_name": school_name,
+            "accreditation": usde,
+        })
 
-    mapping_prompt = f"""PROGRAM_REQUIREMENTS (KU):
+    # ── Determine Gen Ed waiver status ─────────────────────────────────────────
+    ccns_list     = data["ccns_list"]
+    in_ccns       = is_ccns_institution(school_name, ccns_list)
+    degree_type   = extracted.get("degree_type", "")
+    gpa           = extracted.get("gpa")
+    has_bachelor  = extracted.get("has_bachelor_degree", False)
+
+    if degree_type == "AA" and in_ccns and (gpa is None or gpa >= 2.0):
+        gen_ed_status = "Waived (Florida AA CCNS)"
+        gen_ed_note   = (
+            f"{school_name} is a Florida CCNS institution. "
+            "Student holds an AA degree (GPA ≥ 2.0). "
+            "All lower-division general education requirements are considered met. "
+            "Program-required courses are still evaluated."
+        )
+    elif has_bachelor and in_ccns:
+        gen_ed_status = "Waived (Bachelor Degree)"
+        gen_ed_note   = (
+            f"Student holds a Bachelor's degree from {school_name}, a CCNS institution. "
+            "All general education requirements are considered met. "
+            "Program-required courses are still evaluated."
+        )
+    else:
+        gen_ed_status = "Not Waived"
+        gen_ed_note   = ""
+
+    # ── Filter eligible courses (grade C or higher) ───────────────────────────
+    PASSING = {"A+","A","A-","B+","B","B-","C+","C","S","P","CR","TR","T"}
+    eligible = [
+        c for c in extracted.get("courses", [])
+        if str(c.get("grade", "")).strip().upper() in PASSING
+    ]
+
+    # ── Phase 2: Map courses ───────────────────────────────────────────────────
+    mapping_prompt = f"""GEN_ED_STATUS: {gen_ed_status}
+
+PROGRAM_REQUIREMENTS (KU — source of truth):
 {json.dumps(required_courses, indent=2)}
 
-TRANSCRIPT_COURSES (student, grades C or higher only):
+TRANSCRIPT_COURSES (grade C or higher only — source of truth):
 {json.dumps(eligible, indent=2)}
 
-Has Bachelor's degree: {extracted.get("has_bachelor_degree", False)}
-Bachelor's degree info: {extracted.get("bachelor_degree_info", "N/A")}
-
-Map the transcript courses to the program requirements."""
+Map transcript courses to program requirements following all rules."""
 
     try:
         r2 = client.messages.create(
@@ -388,30 +444,27 @@ Map the transcript courses to the program requirements."""
     strong    = mapping.get("strong_matches", [])
     potential = mapping.get("potential_matches", [])
 
-    total_transfer_credits = sum(
-        float(m.get("transfer_credits") or 0) for m in strong
-    )
-
     return jsonify({
         "program_full_name": program["full_name"],
         "program_code":      program["program_code"],
-        # Phase 1 data
-        "school_name":          extracted.get("school_name", ""),
-        "credit_system":        extracted.get("credit_system", "semester"),
-        "credit_system_note":   extracted.get("credit_system_note", ""),
-        "has_bachelor_degree":  extracted.get("has_bachelor_degree", False),
-        "bachelor_degree_info": extracted.get("bachelor_degree_info"),
-        "courses":              extracted.get("courses", []),
-        "additional_components": extracted.get("additional_components", []),
-        "summary_notices":      extracted.get("summary_notices", []),
-        # Accreditation
-        "accreditation": accred_result,
-        # Phase 2 data
-        "gen_ed_waiver":      mapping.get("gen_ed_waiver", "none"),
-        "gen_ed_waiver_note": mapping.get("gen_ed_waiver_note", ""),
-        "strong_matches":   strong,
-        "potential_matches": potential,
-        "total_transfer_credits": total_transfer_credits,
+        "school_name":             school_name,
+        "accreditation_on_doc":    accred_on_doc,
+        "accreditation":           usde,
+        "credit_system":           extracted.get("credit_system", "semester"),
+        "credit_system_note":      extracted.get("credit_system_note", ""),
+        "gpa":                     extracted.get("gpa"),
+        "degree_awarded":          extracted.get("degree_awarded"),
+        "has_bachelor_degree":     has_bachelor,
+        "bachelor_degree_info":    extracted.get("bachelor_degree_info"),
+        "courses":                 extracted.get("courses", []),
+        "additional_components":   extracted.get("additional_components", []),
+        "summary_notices":         extracted.get("summary_notices", []),
+        "is_ccns":                 in_ccns,
+        "gen_ed_status":           gen_ed_status,
+        "gen_ed_note":             gen_ed_note,
+        "strong_matches":          strong,
+        "potential_matches":       potential,
+        "total_transfer_credits":  sum(float(m.get("transfer_credits") or 0) for m in strong),
     })
 
 

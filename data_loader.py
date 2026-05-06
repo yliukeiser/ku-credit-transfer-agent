@@ -24,6 +24,7 @@ def _find(filename: str) -> Path:
 REQUIREMENTS_XLSX  = _find("ProgramCourseReqIndexTable.xlsx")
 POLICY_DOCX        = _find("Undergraduate Transfer of Credit Policy.docx")
 SPECIAL_RULES_XLSX = _find("ProgramTransferPolicySpecialRules.xlsx")
+CCNS_XLSX          = _find("FL Common Course Numbering System institution List.xlsx")
 
 
 # ── program requirements ───────────────────────────────────────────────────────
@@ -227,10 +228,39 @@ def find_special_rules(index: List[dict], program_name: str) -> Optional[dict]:
 
 _cache: dict = {}
 
+def load_ccns_list() -> List[str]:
+    """Load the Florida CCNS institution list as a list of uppercase names."""
+    wb = openpyxl.load_workbook(CCNS_XLSX)
+    ws = wb.active
+    return [
+        str(row[0]).strip().upper()
+        for row in ws.iter_rows(min_row=2, values_only=True)
+        if row[0]
+    ]
+
+
+def is_ccns_institution(school_name: str, ccns_list: List[str]) -> bool:
+    """Return True if the school name fuzzy-matches a CCNS institution."""
+    if not school_name:
+        return False
+    needle = school_name.strip().upper()
+    IGNORE = {"THE", "OF", "AND", "AT", "IN", "FOR", "A"}
+    needle_words = set(needle.split()) - IGNORE
+    for inst in ccns_list:
+        if needle in inst or inst in needle:
+            return True
+        inst_words = set(inst.split()) - IGNORE
+        overlap = needle_words & inst_words
+        if len(overlap) >= 2:
+            return True
+    return False
+
+
 def get_data() -> dict:
     """Load all data once and cache in memory."""
     if not _cache:
-        _cache["programs"] = load_program_requirements()
-        _cache["policy"]   = load_transfer_policy()
+        _cache["programs"]            = load_program_requirements()
+        _cache["policy"]              = load_transfer_policy()
         _cache["special_rules_index"] = load_special_rules_index()
+        _cache["ccns_list"]           = load_ccns_list()
     return _cache

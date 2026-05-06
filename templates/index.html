@@ -724,6 +724,19 @@
           `<p style="color:#b91c1c;padding:20px"><strong>Error:</strong> ${data.error}</p>`;
         return;
       }
+      if (data.blocked) {
+        document.getElementById("result-content").innerHTML = `
+          <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:24px;margin-top:8px">
+            <div style="font-size:18px;font-weight:700;color:#b91c1c;margin-bottom:8px">⛔ Credits Not Transferable</div>
+            <div style="font-size:14px;color:#7f1d1d">${data.blocked_reason}</div>
+            <div style="margin-top:12px;font-size:13px;color:#6b7280">
+              School: <strong>${data.school_name}</strong><br>
+              ${data.accreditation?.note || ''}
+            </div>
+          </div>`;
+        document.getElementById("result-btn-row").style.display = "flex";
+        return;
+      }
       renderResults(data);
       document.getElementById("result-btn-row").style.display = "flex";
     } catch (err) {
@@ -781,24 +794,40 @@
 
     // ── School info row ───────────────────────────────────────────────────
     html += `<div class="section-title">1. School Information</div>`;
-    const accredBadge = accred.is_regionally_accredited === true
-      ? `<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✓ Regionally Accredited</span>`
-      : accred.is_regionally_accredited === false
-      ? `<span style="background:#fee2e2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✗ Not Regionally Accredited</span>`
-      : `<span style="background:#fef9c3;color:#a16207;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">⚠ Verify Manually</span>`;
+
+    const accred = d.accreditation || {};
+    const usdebadge = accred.recognized === true
+      ? `<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✓ USDE-Recognized</span>`
+      : accred.recognized === false
+      ? `<span style="background:#fee2e2;color:#b91c1c;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">✗ Not USDE-Recognized</span>`
+      : `<span style="background:#fef9c3;color:#a16207;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">⚠ Could Not Verify</span>`;
+
+    const accredDisplay = d.accreditation_on_doc
+      ? d.accreditation_on_doc
+      : (accred.accreditations || []).join(", ") || "Not mentioned on transcript";
 
     html += `<table class="eval-table" style="margin-bottom:8px">
       <tbody>
-        <tr><td style="width:200px;font-weight:600;color:#374151">School Name</td><td>${d.school_name || "—"}</td></tr>
-        <tr><td style="font-weight:600;color:#374151">Accreditation</td><td>${accredBadge} &nbsp;<span style="font-size:12px;color:#6b7280">${accred.note || (accred.accreditations || []).join(", ") || ""}</span></td></tr>
-        <tr><td style="font-weight:600;color:#374151">Credit System</td><td>${d.credit_system_note || d.credit_system || "—"}</td></tr>
-        <tr><td style="font-weight:600;color:#374151">Bachelor's Degree</td><td>${d.has_bachelor_degree ? `<strong style="color:#15803d">Yes</strong> — ${d.bachelor_degree_info || ""}` : "No"}</td></tr>
+        <tr><td style="width:220px;font-weight:600;color:#374151">School Name</td>
+            <td>${d.school_name || "—"}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">USDE Recognition</td>
+            <td>${usdebadge} &nbsp;<span style="font-size:12px;color:#6b7280">${accred.note || ""}</span></td></tr>
+        <tr><td style="font-weight:600;color:#374151">Accreditation Body</td>
+            <td style="font-size:13px">${accredDisplay}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">FL CCNS Institution</td>
+            <td>${d.is_ccns ? '<span style="color:#15803d;font-weight:600">Yes</span>' : 'No'}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">Credit System</td>
+            <td>${d.credit_system_note || d.credit_system || "—"}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">GPA</td>
+            <td>${d.gpa != null ? d.gpa : "Not found on transcript"}</td></tr>
+        <tr><td style="font-weight:600;color:#374151">Degree Awarded</td>
+            <td>${d.degree_awarded || "None / Not stated"}</td></tr>
       </tbody>
     </table>`;
 
     // ── Gen Ed waiver ─────────────────────────────────────────────────────
-    if (d.gen_ed_waiver && d.gen_ed_waiver !== "none") {
-      html += `<div class="waiver-banner">✓ ${d.gen_ed_waiver_note || "General Education requirements waived based on prior degree."}</div>`;
+    if (d.gen_ed_status && d.gen_ed_status !== "Not Waived") {
+      html += `<div class="waiver-banner">✓ <strong>General Education Waiver — ${d.gen_ed_status}</strong><br><span style="font-weight:400">${d.gen_ed_note || ""}</span></div>`;
     }
 
     // ── Notices ───────────────────────────────────────────────────────────
