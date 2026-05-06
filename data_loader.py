@@ -259,13 +259,15 @@ def is_ccns_institution(school_name: str, ccns_list: List[str]) -> bool:
 
 def load_usde_list() -> List[str]:
     """Load the USDE recognized institution list as uppercase names."""
-    wb = openpyxl.load_workbook(USDE_XLSX)
+    wb = openpyxl.load_workbook(USDE_XLSX, read_only=True, data_only=True)
     ws = wb.active
-    return [
-        str(row[0]).strip().upper()
-        for row in ws.iter_rows(min_row=2, values_only=True)
-        if row[0]
+    names = [
+        str(row[0].value).strip().upper()
+        for row in ws.iter_rows(min_row=2)
+        if row[0].value
     ]
+    wb.close()
+    return names
 
 
 def is_usde_recognized(school_name: str, usde_list: List[str]) -> bool:
