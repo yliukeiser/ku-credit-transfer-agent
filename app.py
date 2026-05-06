@@ -241,6 +241,61 @@ def program_requirements():
     })
 
 
+def ocr_pdf_with_claude(pdf_bytes: bytes) -> tuple:
+    """
+    Render each PDF page as a PNG image and send to Claude vision for OCR.
+    Returns (full_text, page_count).
+    """
+    import base64
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        return "", 0
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    page_texts = []
+    client = anthropic.Anthropic()
+
+    for page_num, page in enumerate(doc, 1):
+        mat = fitz.Matrix(2.0, 2.0)  # 2x zoom for better OCR quality
+        pix = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("png")
+        img_b64 = base64.standard_b64encode(img_bytes).decode()
+
+        response = client.messages.create(
+            model="claude-opus-4-7",
+            max_tokens=4096,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": img_b64,
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            "This is a page from an academic transcript. "
+                            "Extract ALL text exactly as it appears — student name, institution, "
+                            "dates, course codes, course names, grades, credits, GPA, degree awarded. "
+                            "Preserve the layout as closely as possible. Output plain text only, no commentary."
+                        )
+                    }
+                ],
+            }]
+        )
+        text = response.content[0].text.strip()
+        if text:
+            page_texts.append(f"--- Page {page_num} ---\n{text}")
+
+    doc.close()
+    return "\n\n".join(page_texts), len(page_texts)
+
+
 @app.route("/api/extract-pdf", methods=["POST"])
 def extract_pdf():
     if "file" not in request.files:
@@ -290,11 +345,14 @@ def extract_pdf():
         full_text = "\n\n".join(page_texts).strip()
 
         if not full_text:
-            return jsonify({
-                "error": "Could not extract text from this PDF. "
-                         "Make sure it is a text-based PDF (not a scanned image). "
-                         "Try opening the PDF and selecting text — if you cannot select any text, it is a scanned image and cannot be processed."
-            }), 422
+            # Fallback: scanned PDF — render pages as images and OCR via Claude vision
+            full_text, page_count = ocr_pdf_with_claude(pdf_bytes)
+            if not full_text:
+                return jsonify({
+                    "error": "Could not extract text from this PDF even with OCR. "
+                             "Please ensure the file is a readable transcript."
+                }), 422
+            return jsonify({"text": full_text, "page_count": page_count, "ocr": True})
 
         return jsonify({"text": full_text, "page_count": len(page_texts)})
 
