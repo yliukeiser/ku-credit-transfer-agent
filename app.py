@@ -13,7 +13,7 @@ import pdfplumber
 import requests as http_requests
 from flask import Flask, jsonify, render_template, request
 
-from data_loader import get_data, is_ccns_institution
+from data_loader import get_data, is_ccns_institution, is_usde_recognized
 
 app = Flask(__name__)
 app.secret_key = "ku-credit-transfer-secret-2024"
@@ -128,46 +128,33 @@ Return ONLY valid JSON, no markdown fences:
 """
 
 
-# ── USDE recognition check via DOE DAPIP API ──────────────────────────────────
+# ── USDE recognition check via local DOE institution list ─────────────────────
 
 def check_usde_recognition(school_name: str) -> dict:
     """
-    Query DOE DAPIP to determine if a school is USDE-recognized.
+    Check if a school is USDE-recognized using the local DOE institution list.
     Returns: {recognized: bool|None, institution_name, accreditations, note}
     """
-    try:
-        url = "https://ope.ed.gov/dapip/api/institutions/search"
-        params = {"name": school_name, "includeRecognizedStatus": "true"}
-        r = http_requests.get(url, params=params, timeout=8)
-        if r.status_code == 200:
-            data = r.json()
-            institutions = data if isinstance(data, list) else data.get("institutionList", [])
-            if institutions:
-                inst = institutions[0]
-                accred_list = inst.get("accreditationList", [])
-                accred_names = [
-                    str(a.get("agencyName", a)).strip()
-                    for a in accred_list if a
-                ]
-                return {
-                    "recognized": True,
-                    "institution_name": inst.get("institutionName", school_name),
-                    "accreditations": accred_names[:5],
-                    "note": ""
-                }
-            return {
-                "recognized": False,
-                "institution_name": school_name,
-                "accreditations": [],
-                "note": f"'{school_name}' was not found in the U.S. Department of Education DAPIP database."
-            }
-    except Exception:
-        pass
+    usde_list = get_data().get("usde_list", [])
+    if not usde_list:
+        return {
+            "recognized": None,
+            "institution_name": school_name,
+            "accreditations": [],
+            "note": "USDE institution list unavailable. Manual verification required at https://ope.ed.gov/dapip/"
+        }
+    if is_usde_recognized(school_name, usde_list):
+        return {
+            "recognized": True,
+            "institution_name": school_name,
+            "accreditations": [],
+            "note": ""
+        }
     return {
-        "recognized": None,
+        "recognized": False,
         "institution_name": school_name,
         "accreditations": [],
-        "note": "Could not reach DOE DAPIP (network issue). Manual verification required at https://ope.ed.gov/dapip/"
+        "note": f"'{school_name}' was not found in the U.S. Department of Education recognized institution list."
     }
 
 
