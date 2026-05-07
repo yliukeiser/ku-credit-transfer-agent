@@ -168,14 +168,30 @@ def check_usde_recognition(school_name: str) -> dict:
 
 
 def clean_json(raw: str) -> str:
-    """Strip markdown code fences from a JSON string."""
+    """Extract the first valid JSON object or array from a Claude response."""
+    import re
     raw = raw.strip()
-    if raw.startswith("```"):
-        parts = raw.split("```")
-        raw = parts[1] if len(parts) > 1 else raw
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return raw.strip()
+    # Remove markdown code fences
+    raw = re.sub(r"^```(?:json)?\s*", "", raw)
+    raw = re.sub(r"\s*```$", "", raw)
+    raw = raw.strip()
+    # If it already starts with { or [, return as-is
+    if raw.startswith("{") or raw.startswith("["):
+        return raw
+    # Find the first { or [ and last matching } or ]
+    start = -1
+    for i, ch in enumerate(raw):
+        if ch in ("{", "["):
+            start = i
+            break
+    if start == -1:
+        return raw
+    # Find the matching closing bracket by scanning from end
+    close = "}" if raw[start] == "{" else "]"
+    end = raw.rfind(close)
+    if end == -1:
+        return raw[start:]
+    return raw[start:end + 1]
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
@@ -411,7 +427,7 @@ def evaluate():
     try:
         r1 = client.messages.create(
             model=MODEL,
-            max_tokens=4096,
+            max_tokens=8192,
             thinking={"type": "adaptive"},
             system=EXTRACT_SYSTEM,
             messages=[{"role": "user", "content": f"Extract all information from this transcript:\n\n{transcript_text}"}],
@@ -484,7 +500,7 @@ Map transcript courses to program requirements following all rules."""
     try:
         r2 = client.messages.create(
             model=MODEL,
-            max_tokens=4096,
+            max_tokens=8192,
             thinking={"type": "adaptive"},
             system=MAPPING_SYSTEM,
             messages=[{"role": "user", "content": mapping_prompt}],
