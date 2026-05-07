@@ -391,6 +391,58 @@ def debug_pdf():
     return extract_pdf()
 
 
+@app.route("/api/extract-pdf-base64", methods=["POST"])
+def extract_pdf_base64():
+    """
+    Power Automate / JSON-friendly PDF extraction.
+    Accepts: {"pdf_base64": "<base64-encoded PDF bytes>"}
+    Returns: {"text": "...", "page_count": N}
+    """
+    import base64
+    body = request.get_json(silent=True) or {}
+    b64 = body.get("pdf_base64", "")
+    if not b64:
+        return jsonify({"error": "pdf_base64 field is required"}), 400
+    try:
+        pdf_bytes = base64.b64decode(b64)
+    except Exception:
+        return jsonify({"error": "Invalid base64 data"}), 400
+
+    page_texts = []
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        for page_num, page in enumerate(pdf.pages, 1):
+            text = None
+            try:
+                text = page.extract_text(layout=True)
+            except TypeError:
+                pass
+            if not text or len(text.strip()) < 20:
+                text = page.extract_text()
+            if not text or len(text.strip()) < 20:
+                words = page.extract_words(x_tolerance=5, y_tolerance=5,
+                                           keep_blank_chars=False, use_text_flow=True)
+                if words:
+                    lines_dict = {}
+                    for w in words:
+                        y = round(w["top"] / 5) * 5
+                        lines_dict.setdefault(y, []).append(w)
+                    text = "\n".join(
+                        "  ".join(w["text"] for w in sorted(ln, key=lambda w: w["x0"]))
+                        for ln in sorted(lines_dict)
+                    )
+            if text and text.strip():
+                page_texts.append(f"--- Page {page_num} ---\n{text.strip()}")
+
+    full_text = "\n\n".join(page_texts).strip()
+    if not full_text:
+        full_text, page_count = ocr_pdf_with_claude(pdf_bytes)
+        if not full_text:
+            return jsonify({"error": "Could not extract text from PDF"}), 422
+        return jsonify({"text": full_text, "page_count": page_count, "ocr": True})
+
+    return jsonify({"text": full_text, "page_count": len(page_texts)})
+
+
 @app.route("/api/evaluate", methods=["POST"])
 def evaluate():
     if not os.environ.get("ANTHROPIC_API_KEY"):
