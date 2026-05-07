@@ -7,6 +7,7 @@ Then open:  http://localhost:5000
 import io
 import json
 import os
+import threading
 
 import anthropic
 import pdfplumber
@@ -17,6 +18,10 @@ from data_loader import get_data, is_ccns_institution, is_usde_recognized
 
 app = Flask(__name__)
 app.secret_key = "ku-credit-transfer-secret-2024"
+
+# Pre-load all data files in a background thread at startup so the first
+# request is not slow (especially the 43k-row USDE list).
+threading.Thread(target=get_data, daemon=True).start()
 
 MODEL = "claude-opus-4-7"
 
