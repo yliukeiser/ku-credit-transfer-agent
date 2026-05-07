@@ -81,13 +81,17 @@ Act on GEN_ED_STATUS exactly as follows — do NOT re-state or re-explain the wa
 
 === LEVEL COMPATIBILITY (MANDATORY — check before any match) ===
 Determine course level from first digit of course number:
-- 1xxx or 2xxx = Lower Division
-- 3xxx or 4xxx = Upper Division
+- 1xxx = 1000-level
+- 2xxx = 2000-level
+- 3xxx = 3000-level
+- 4xxx = 4000-level
 
-Rules:
-- Lower Division transcript course (1xxx/2xxx) → can ONLY match Lower Division KU course (1xxx/2xxx). MUST NOT match 3xxx/4xxx.
-- Upper Division transcript course (3xxx/4xxx) → can match Upper Division KU course. May match lower ONLY if content is highly equivalent.
-- Level mismatch → EXCLUDE from all tables, no exceptions.
+Rules (STRICT — no exceptions):
+- 1xxx transcript course → can ONLY match 1xxx KU course.
+- 2xxx transcript course → can ONLY match 2xxx KU course.
+- 3xxx transcript course → can ONLY match 3xxx KU course.
+- 4xxx transcript course → can ONLY match 4xxx KU course.
+- Any cross-level attempt (e.g. 1xxx→2xxx, 2xxx→3xxx, 3xxx→1xxx) → EXCLUDE immediately. Do not place in any table.
 
 === MATCHING CRITERIA (only after level check passes) ===
 Match using: course code similarity + course name/subject similarity + credit hours alignment.
