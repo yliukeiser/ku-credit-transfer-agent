@@ -29,7 +29,7 @@ API_KEY = os.environ.get("API_KEY", "")
 
 @app.before_request
 def check_api_key():
-    if not API_KEY or request.method == "OPTIONS":
+    if not API_KEY or request.method in ("GET", "OPTIONS"):
         return
     if request.path.startswith("/api/") and request.headers.get("X-API-Key") != API_KEY:
         return jsonify({"error": "Unauthorized"}), 401
