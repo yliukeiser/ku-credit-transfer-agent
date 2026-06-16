@@ -21,7 +21,13 @@ app = Flask(__name__)
 app.secret_key = "ku-credit-transfer-secret-2024"
 
 # Allow the Power Pages domain (or * for dev). Set CORS_ORIGIN in Azure env vars.
-CORS(app, origins=os.environ.get("CORS_ORIGIN", "*"))
+CORS(
+    app,
+    origins=os.environ.get("CORS_ORIGIN", "*"),
+    allow_headers=["X-API-Key", "Content-Type"],
+    methods=["GET", "POST", "OPTIONS"],
+    supports_credentials=False,
+)
 
 # Optional shared-secret auth. Set API_KEY in Azure env vars; leave unset for local dev.
 API_KEY = os.environ.get("API_KEY", "")
