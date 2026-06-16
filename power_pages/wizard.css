@@ -1,0 +1,326 @@
+/* Upload this file to Power Pages as a Web File with partial URL: /ku-wizard.css */
+/* All rules scoped under #ku-wizard-root to avoid Bootstrap/Power Pages conflicts. */
+
+#ku-wizard-root *,
+#ku-wizard-root *::before,
+#ku-wizard-root *::after {
+  box-sizing: border-box;
+}
+
+/* ── App banner ── */
+#ku-wizard-root .ku-header {
+  background: #003087;
+  color: white;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  border-radius: 10px;
+  margin-bottom: 0;
+}
+#ku-wizard-root .ku-logo {
+  width: 46px; height: 46px;
+  background: white;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; color: #003087; font-size: 18px; letter-spacing: -1px;
+  flex-shrink: 0;
+}
+#ku-wizard-root .ku-title { font-size: 18px; font-weight: 700; }
+#ku-wizard-root .ku-sub  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+#ku-wizard-root .ku-restart-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white; padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; font-size: 13px; transition: background .2s;
+}
+#ku-wizard-root .ku-restart-btn:hover { background: rgba(255,255,255,0.28); }
+
+/* ── Progress bar ── */
+#ku-wizard-root #ku-progress-bar {
+  background: white;
+  border-bottom: 1px solid #dde3ea;
+  display: flex;
+  padding: 0 32px;
+}
+#ku-wizard-root .step-tab {
+  padding: 14px 20px;
+  font-size: 13px;
+  color: #9ca3af;
+  border-bottom: 3px solid transparent;
+  display: flex; align-items: center; gap: 8px;
+  transition: color .2s, border-color .2s;
+}
+#ku-wizard-root .step-tab .num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+#ku-wizard-root .step-tab.active { color: #003087; border-bottom-color: #003087; }
+#ku-wizard-root .step-tab.active .num { background: #003087; color: white; }
+#ku-wizard-root .step-tab.done { color: #16a34a; }
+#ku-wizard-root .step-tab.done .num { background: #16a34a; color: white; }
+
+/* ── Main content ── */
+#ku-wizard-root .ku-main {
+  max-width: 900px;
+  margin: 36px auto;
+  padding: 0 20px 60px;
+}
+
+#ku-wizard-root .card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 32px;
+  margin-bottom: 24px;
+}
+#ku-wizard-root .card h2 {
+  font-size: 20px; font-weight: 700; color: #003087;
+  margin-bottom: 8px;
+}
+#ku-wizard-root .card .subtitle {
+  font-size: 14px; color: #6b7280; margin-bottom: 24px;
+}
+
+/* ── Step panels ── */
+#ku-wizard-root .step-panel { display: none; }
+#ku-wizard-root .step-panel.active { display: block; }
+
+/* ── Degree type cards ── */
+#ku-wizard-root .degree-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+#ku-wizard-root .degree-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+#ku-wizard-root .degree-card:hover {
+  border-color: #003087;
+  box-shadow: 0 4px 16px rgba(0,48,135,0.12);
+  transform: translateY(-2px);
+}
+#ku-wizard-root .degree-card.selected {
+  border-color: #003087;
+  background: #eef3fb;
+}
+#ku-wizard-root .degree-card .badge {
+  display: inline-block;
+  background: #003087; color: white;
+  border-radius: 8px; padding: 6px 14px;
+  font-size: 22px; font-weight: 800; letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+#ku-wizard-root .degree-card.selected .badge { background: #002060; }
+#ku-wizard-root .degree-card .label { font-size: 13px; color: #374151; font-weight: 500; }
+
+/* ── Program list ── */
+#ku-wizard-root .program-search {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #d1d5db; border-radius: 8px;
+  font-size: 14px; margin-bottom: 14px; outline: none;
+}
+#ku-wizard-root .program-search:focus { border-color: #003087; }
+#ku-wizard-root .program-list {
+  max-height: 360px; overflow-y: auto;
+  border: 1px solid #e5e7eb; border-radius: 10px;
+}
+#ku-wizard-root .program-item {
+  padding: 14px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background .15s;
+  display: flex; align-items: center; gap: 12px;
+}
+#ku-wizard-root .program-item:last-child { border-bottom: none; }
+#ku-wizard-root .program-item:hover { background: #f0f4f8; }
+#ku-wizard-root .program-item.selected { background: #eef3fb; }
+#ku-wizard-root .program-item .prog-code {
+  background: #e0e7ef; color: #003087;
+  border-radius: 6px; padding: 3px 8px;
+  font-size: 11px; font-weight: 700;
+  white-space: nowrap;
+}
+#ku-wizard-root .program-item .prog-name { font-size: 14px; font-weight: 500; }
+
+/* ── Requirements table ── */
+#ku-wizard-root .req-table-wrap { overflow-x: auto; }
+#ku-wizard-root table.req-table {
+  width: 100%; border-collapse: collapse; font-size: 13.5px;
+}
+#ku-wizard-root .req-table th {
+  background: #003087; color: white;
+  padding: 10px 14px; text-align: left; font-weight: 600;
+}
+#ku-wizard-root .req-table td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; }
+#ku-wizard-root .req-table tr.row-category td {
+  background: #eef3fb; font-weight: 700; color: #003087; font-size: 14px;
+}
+#ku-wizard-root .req-table tr.row-discipline td {
+  background: #f8fafc; font-weight: 600; color: #374151; padding-left: 28px;
+}
+#ku-wizard-root .req-table tr.row-course td { padding-left: 44px; }
+#ku-wizard-root .req-table tr.row-course:hover td { background: #fafbfc; }
+#ku-wizard-root .credits-badge {
+  display: inline-block;
+  background: #e0e7ef; color: #003087;
+  border-radius: 99px; padding: 2px 10px;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+
+/* ── Buttons ── */
+#ku-wizard-root .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+#ku-wizard-root .btn {
+  padding: 11px 24px; border-radius: 9px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  border: none; transition: background .2s, transform .1s;
+}
+#ku-wizard-root .btn:active { transform: scale(0.98); }
+#ku-wizard-root .btn-primary { background: #003087; color: white; }
+#ku-wizard-root .btn-primary:hover { background: #00226b; }
+#ku-wizard-root .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
+#ku-wizard-root .btn-secondary { background: #e5e7eb; color: #374151; }
+#ku-wizard-root .btn-secondary:hover { background: #d1d5db; }
+
+/* ── PDF upload zone ── */
+#ku-wizard-root .upload-zone {
+  border: 2.5px dashed #c7d2e0;
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: #f8fafc;
+}
+#ku-wizard-root .upload-zone:hover,
+#ku-wizard-root .upload-zone.drag-over {
+  border-color: #003087;
+  background: #eef3fb;
+}
+#ku-wizard-root .upload-zone .icon { font-size: 42px; margin-bottom: 12px; }
+#ku-wizard-root .upload-zone .upload-title { font-size: 16px; font-weight: 600; color: #374151; }
+#ku-wizard-root .upload-zone .upload-sub   { font-size: 13px; color: #9ca3af; margin-top: 6px; }
+#ku-wizard-root .upload-zone .browse-link  { color: #003087; text-decoration: underline; cursor: pointer; }
+
+#ku-wizard-root .extracted-preview {
+  margin-top: 20px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  overflow: hidden;
+}
+#ku-wizard-root .extracted-preview .preview-header {
+  background: #eef3fb;
+  padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #d1d5db;
+}
+#ku-wizard-root .extracted-preview .preview-header span { font-size: 13px; font-weight: 600; color: #003087; }
+#ku-wizard-root .extracted-preview .preview-header button {
+  background: none; border: none; color: #6b7280;
+  font-size: 12px; cursor: pointer; text-decoration: underline;
+}
+#ku-wizard-root .transcript-area {
+  width: 100%; min-height: 200px; max-height: 320px;
+  border: none; outline: none;
+  padding: 14px; font-size: 12.5px; font-family: "Courier New", monospace;
+  line-height: 1.6; resize: vertical;
+  background: white;
+}
+#ku-wizard-root .transcript-hint { font-size: 12px; color: #9ca3af; margin-top: 8px; }
+
+/* ── Results ── */
+#ku-wizard-root .result-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px; margin-bottom: 28px;
+}
+#ku-wizard-root .stat-card {
+  background: #f8fafc; border-radius: 10px;
+  padding: 16px 20px; text-align: center;
+  border: 1px solid #e5e7eb;
+}
+#ku-wizard-root .stat-card .val {
+  font-size: 28px; font-weight: 800; color: #003087; line-height: 1;
+}
+#ku-wizard-root .stat-card .lbl { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+#ku-wizard-root .section-title {
+  font-size: 15px; font-weight: 700; color: #003087;
+  margin: 24px 0 12px; padding-bottom: 6px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+#ku-wizard-root table.eval-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+#ku-wizard-root .eval-table th {
+  background: #003087; color: white;
+  padding: 9px 12px; text-align: left; font-weight: 600;
+}
+#ku-wizard-root .eval-table td {
+  padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top;
+}
+#ku-wizard-root .eval-table tr:nth-child(even) td { background: #fafbfc; }
+#ku-wizard-root .eval-table tr:hover td { background: #f0f4f8; }
+
+#ku-wizard-root .waiver-banner {
+  background: #dcfce7; border: 1px solid #86efac;
+  border-radius: 10px; padding: 14px 18px;
+  color: #15803d; font-size: 13.5px; font-weight: 500;
+  margin-bottom: 16px;
+}
+
+#ku-wizard-root .action-list { list-style: none; padding: 0; }
+#ku-wizard-root .action-list li {
+  padding: 8px 14px; margin-bottom: 6px;
+  background: #fef9c3; border-left: 4px solid #ca8a04;
+  border-radius: 0 8px 8px 0; font-size: 13px;
+}
+
+/* ── Loading spinner ── */
+#ku-wizard-root .spinner-wrap {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 0; gap: 16px;
+}
+#ku-wizard-root .spinner {
+  width: 44px; height: 44px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #003087;
+  border-radius: 50%;
+  animation: ku-spin 0.8s linear infinite;
+}
+@keyframes ku-spin { to { transform: rotate(360deg); } }
+#ku-wizard-root .spinner-text { color: #6b7280; font-size: 14px; }
+
+/* ── Program summary banner ── */
+#ku-wizard-root .selected-program-banner {
+  background: #eef3fb; border-radius: 10px;
+  padding: 14px 18px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+#ku-wizard-root .selected-program-banner .code {
+  background: #003087; color: white;
+  border-radius: 8px; padding: 6px 12px;
+  font-weight: 700; font-size: 13px; white-space: nowrap;
+}
+#ku-wizard-root .selected-program-banner .name { font-size: 14px; font-weight: 600; color: #003087; }
+#ku-wizard-root .selected-program-banner .type { font-size: 12px; color: #6b7280; }
+
+/* ── Print styles ── */
+@media print {
+  #ku-wizard-root .ku-header,
+  #ku-wizard-root #ku-progress-bar,
+  #ku-wizard-root .btn-row { display: none !important; }
+  #ku-wizard-root .step-panel { display: block !important; }
+}

@@ -1,0 +1,141 @@
+{{- /*
+  Power Pages custom page — KU Credit Transfer Evaluation Wizard
+  ---------------------------------------------------------------
+  Prerequisites:
+  1. Upload wizard.css as a Web File named "ku-wizard.css" (partial URL: /ku-wizard.css).
+  2. Upload wizard.js  as a Web File named "ku-wizard.js"  (partial URL: /ku-wizard.js).
+  3. Create two Site Settings:
+       ku/api/base_url  →  https://<your-app>.azurewebsites.net
+       ku/api/key       →  <the API_KEY value set on the App Service>
+  4. Paste this file's content into the custom page's source editor.
+*/ -}}
+
+<script>
+  window.KU_API_BASE = "{{ site.settings['ku/api/base_url'] | default: '' }}";
+  window.KU_API_KEY  = "{{ site.settings['ku/api/key']      | default: '' }}";
+</script>
+<link rel="stylesheet" href="/ku-wizard.css">
+
+<div id="ku-wizard-root">
+
+  <div class="ku-header">
+    <div class="ku-logo">KU</div>
+    <div>
+      <div class="ku-title">Credit Transfer Evaluation</div>
+      <div class="ku-sub">Keiser University — Academic Advisor Tool</div>
+    </div>
+    <button class="ku-restart-btn" onclick="kuRestart()">Start Over</button>
+  </div>
+
+  <div id="ku-progress-bar">
+    <div class="step-tab active" id="tab-1"><span class="num">1</span> Degree Type</div>
+    <div class="step-tab" id="tab-2"><span class="num">2</span> Program</div>
+    <div class="step-tab" id="tab-3"><span class="num">3</span> Requirements</div>
+    <div class="step-tab" id="tab-4"><span class="num">4</span> Transcript</div>
+    <div class="step-tab" id="tab-5"><span class="num">5</span> Evaluation</div>
+  </div>
+
+  <div class="ku-main">
+
+    <!-- STEP 1: Degree Type -->
+    <div class="step-panel active" id="step-1">
+      <div class="card">
+        <h2>Step 1 — Select Degree Type</h2>
+        <p class="subtitle">Choose the type of degree you are enrolling in at Keiser University.</p>
+        <div class="degree-grid" id="degree-grid">
+          <div class="spinner-wrap"><div class="spinner"></div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-step1" onclick="goToStep2()" disabled>Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Program -->
+    <div class="step-panel" id="step-2">
+      <div class="card">
+        <h2>Step 2 — Select Your Program</h2>
+        <p class="subtitle" id="step2-subtitle">Programs available for the selected degree type.</p>
+        <input class="program-search" id="program-search" placeholder="Search programs..." oninput="filterPrograms()" />
+        <div class="program-list" id="program-list">
+          <div class="spinner-wrap"><div class="spinner"></div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+          <button class="btn btn-primary" id="btn-step2" onclick="goToStep3()" disabled>Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Requirements -->
+    <div class="step-panel" id="step-3">
+      <div class="card">
+        <h2>Step 3 — Program Requirements</h2>
+        <p class="subtitle">Review the required courses for your program before proceeding.</p>
+        <div id="req-content">
+          <div class="spinner-wrap"><div class="spinner"></div></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+          <button class="btn btn-primary" onclick="goToStep4()">Continue to Transcript</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Transcript -->
+    <div class="step-panel" id="step-4">
+      <div class="card">
+        <h2>Step 4 — Upload Your Transcript</h2>
+        <p class="subtitle">Upload your transcript PDF. The agent will read it and extract your completed courses automatically.</p>
+        <div id="step4-program-banner"></div>
+
+        <div class="upload-zone" id="upload-zone"
+             onclick="document.getElementById('pdf-input').click()"
+             ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <div class="icon">📄</div>
+          <div class="upload-title">Drop your transcript PDF here</div>
+          <div class="upload-sub">or <span class="browse-link">browse to upload</span></div>
+          <div class="upload-sub" style="margin-top:10px">Supports text-based PDF transcripts</div>
+        </div>
+        <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="onFileSelected(event)"/>
+
+        <div class="extracted-preview" id="extracted-preview" style="display:none">
+          <div class="preview-header">
+            <span id="preview-filename">transcript.pdf</span>
+            <button onclick="clearUpload()">Remove &amp; upload different file</button>
+          </div>
+          <textarea class="transcript-area" id="transcript-text"
+            placeholder="Extracted text will appear here..."></textarea>
+        </div>
+
+        <p class="transcript-hint" id="upload-hint">Courses with a grade of D or F will automatically be excluded from the evaluation.</p>
+
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
+          <button class="btn btn-primary" id="btn-evaluate" onclick="runEvaluation()" disabled>Evaluate Transfer Credits</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: Results -->
+    <div class="step-panel" id="step-5">
+      <div class="card">
+        <h2>Step 5 — Transfer Credit Evaluation</h2>
+        <p class="subtitle" id="result-subtitle"></p>
+        <div id="result-content">
+          <div class="spinner-wrap">
+            <div class="spinner"></div>
+            <p class="spinner-text">Evaluating your transcript against program requirements…</p>
+          </div>
+        </div>
+        <div class="btn-row" id="result-btn-row" style="display:none">
+          <button class="btn btn-secondary" onclick="goToStep(4)">Back</button>
+          <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.ku-main -->
+</div><!-- /#ku-wizard-root -->
+
+<script src="/ku-wizard.js"></script>
