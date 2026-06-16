@@ -13,32 +13,35 @@ import anthropic
 import pdfplumber
 import requests as http_requests
 from flask import Flask, jsonify, render_template, request
-from flask_cors import CORS
 
 from data_loader import get_data, is_ccns_institution, is_usde_recognized
 
 app = Flask(__name__)
 app.secret_key = "ku-credit-transfer-secret-2024"
 
-# Allow the Power Pages domain (or * for dev). Set CORS_ORIGIN in Azure env vars.
-CORS(
-    app,
-    origins=os.environ.get("CORS_ORIGIN", "*"),
-    allow_headers=["X-API-Key", "Content-Type"],
-    methods=["GET", "POST", "OPTIONS"],
-    supports_credentials=False,
-)
-
-# Optional shared-secret auth. Set API_KEY in Azure env vars; leave unset for local dev.
 API_KEY = os.environ.get("API_KEY", "")
 
 
 @app.before_request
-def check_api_key():
-    if not API_KEY or request.method in ("GET", "OPTIONS"):
-        return
-    if request.path.startswith("/api/") and request.headers.get("X-API-Key") != API_KEY:
-        return jsonify({"error": "Unauthorized"}), 401
+def handle_preflight():
+    if request.method == "OPTIONS":
+        resp = app.make_response("")
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Headers"] = "X-API-Key, Content-Type"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        resp.headers["Access-Control-Max-Age"] = "86400"
+        return resp
+    if API_KEY and request.method == "POST":
+        if request.path.startswith("/api/") and request.headers.get("X-API-Key") != API_KEY:
+            return jsonify({"error": "Unauthorized"}), 401
+
+
+@app.after_request
+def add_cors(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "X-API-Key, Content-Type"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return response
 
 
 # Pre-load all data files in a background thread at startup so the first
